@@ -22,13 +22,12 @@ logger.addHandler(logger_file_handler)
 # Your bot's API token
 try:
     TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+    CHANNEL_ID = os.environ["CHANNEL_ID"]
 except KeyError:
     TELEGRAM_BOT_TOKEN = "Token not available!"
-    logger.info("Token not available!")
+    CHANNEL_ID = "Channel ID not available!"
+    logger.info("Token or CHANNEL ID not available!")
     raise
-
-# Your channel ID
-channel_id = '5500999973'  # Replace with your channel name or ID
 
 
 async def send_message_to_channel():
@@ -58,7 +57,7 @@ async def send_message_to_channel():
     table.align['40k'] = 'r'
     table.add_row([ data_ele[9] ,  data_ele[1] ,str(int(str(data_ele[1]).replace(",", "").replace("₹", "")) * 8),round(40000/int(data_ele[1].replace("₹", "")),3) ])
     combined_message = f"{message_text}\n\n<pre>{table}</pre>"
-    await bot.send_message(chat_id=channel_id, text=combined_message,parse_mode='HTML')
+    await bot.send_message(chat_id=CHANNEL_ID, text=combined_message,parse_mode='HTML')
 
 # Run the asynchronous function
 if __name__ == '__main__':
