@@ -15,7 +15,7 @@ The Gold Rate Telegram Bot is designed to provide regular updates on gold rates.
 
 ## Subscription <a name="subscription"></a>
 
-If you would like to receive regular updates on gold rates, please subscribe to our Telegram channel: [@GoldRateScrapperBot](https://t.me/GoldRateScrapperBot).
+If you would like to receive regular updates on gold rates, please subscribe to our Telegram channel: [@ThangamayilGoldratesperHour](https://t.me/+dRZFgdLz3No0ZmY1).
 
 ## GitHub Actions <a name="github-actions"></a>
 
