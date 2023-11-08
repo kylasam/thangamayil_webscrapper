@@ -3,6 +3,7 @@ name: run thangamayil_alert script
 on:
   schedule:
     - cron: '0 0/1 * * *' # Every 1hr
+  workflow_dispatch:
 
 jobs:
   build:
