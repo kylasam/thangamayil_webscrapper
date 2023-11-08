@@ -25,7 +25,7 @@ jobs:
       - name: execute py script # run main.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+          CHANNEL_ID: ${{ env.CHANNEL_ID }}
           
         run: python main.py
 
