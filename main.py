@@ -22,7 +22,7 @@ logger.addHandler(logger_file_handler)
 # Your bot's API token
 try:
     TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
-    CHANNEL_ID = os.environ.get("CHANNEL_ID")
+    CHANNEL_ID = os.environ["CHANNEL_ID"]
 except KeyError:
     TELEGRAM_BOT_TOKEN = "Token not available!"
     CHANNEL_ID = "Channel ID not available!"
