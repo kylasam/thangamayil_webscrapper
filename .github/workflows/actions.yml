@@ -1,4 +1,4 @@
-name: run thangamayil_alert script
+name: thangamayil_alert script
 
 on:
   schedule:
