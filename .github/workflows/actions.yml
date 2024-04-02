@@ -2,7 +2,7 @@ name: thangamayil_alert script
 
 on:
   schedule:
-    - cron: '*/60 6-13 * * 1-6' # Runs from Mon-Sat daily from IST time 9:30 till 4:30 for every 1 hr
+    - cron: '*/60 5-13 * * 1-6' # Runs from Mon-Sat daily from IST time 9:30 till 4:30 for every 1 hr
   workflow_dispatch:
 
 jobs:
