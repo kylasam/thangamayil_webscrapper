@@ -35,3 +35,6 @@ Please set these environment variables as secrets in your GitHub repository's se
 
 For more detailed information about how the Gold Rate Telegram Bot works and the underlying code, you can refer to the [documentation](https://github.com/your-repo/documentation.md) on our GitHub repository.
 
+NOTE:
+KMS based encryption would be introduced sooner for this repo.
+
