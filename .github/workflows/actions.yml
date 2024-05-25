@@ -33,4 +33,3 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/key.json
           gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
           python main.py
-
