@@ -73,6 +73,8 @@ def get_goldrates_scrapper(base_url):
             for item in price_elements[:-2]:
                 rate_elements.append(str(item).replace("<h2>", "").replace("</h2>", "").replace('₹', ''))
 
+            rate_elements.pop()  # Remove the last element which is not required(platinum price)
+
             # Finally append the timestamp column as end of list element
             logger.info("\t\tCurrent day prices data : %s", rate_elements)
             rate_elements.append(os.environ.get("run_ts"))
