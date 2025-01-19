@@ -149,7 +149,7 @@ async def send_telegram_notifications(base_url,src_data):
     updt_ts = src_data.at[0, 'web_last_updated_ts']
     g_22k_price = src_data.at[0, 'g_price_22k_gram']
     g_8g_price = int(g_22k_price) * 8
-    g_40k_price = round(40000 / int(g_22k_price),3)
+    g_40k_price = round(60000 / int(g_22k_price),3)
 
     message_text = f"📣 Gold Rate From {base_url} at {os.environ.get('run_ts')}"
     table = pt.PrettyTable([ 'updt_ts', 'g(22k)₹','8g ₹','40k'])
