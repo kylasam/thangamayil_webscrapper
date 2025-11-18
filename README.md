@@ -38,4 +38,3 @@ For more detailed information about how the Gold Rate Telegram Bot works and the
 
 NOTE:
 KMS based encryption would be introduced sooner for this repo.
-
