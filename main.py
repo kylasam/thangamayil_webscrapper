@@ -139,7 +139,7 @@ def get_goldrates_scrapper(base_url):
         logger.error("\t\tERROR :%s in Webscraping and Data Preparation stage ❌ ",str(e))
         sys.exit(96)
 
-def load_bq(src_df, project_id, dataset_id, table_id, write_mode):
+def load_bq(src_df, project_id, dataset_id, table_id, write_mode, service_accnt_json_loc=None, label=None):
     """
     Load a Pandas DataFrame to BigQuery.
 
@@ -148,23 +148,52 @@ def load_bq(src_df, project_id, dataset_id, table_id, write_mode):
     - project_id: str, the BigQuery project ID.
     - dataset_id: str, the BigQuery dataset ID.
     - table_id: str, the BigQuery table ID.
-    - if_exists: str, default 'append', whether to append, replace, or fail if the table exists.
-    - SA_file : Service account Json file location
+    - write_mode: str, whether to append, replace, or fail if the table exists.
+    - service_accnt_json_loc: str, optional path to a service account JSON key.
+      If provided, credentials are loaded explicitly for THIS destination only,
+      so a single run can write to multiple GCP projects with different SAs.
+      If omitted, falls back to Application Default Credentials (ADC) / whatever
+      GOOGLE_APPLICATION_CREDENTIALS is already set to.
+    - label: str, optional friendly name for logging (e.g. "primary" / "wealthyo").
+
     Returns:
-    - None
+    - bool: True on success, False on failure (does not exit the process).
     """
+    dest_label = label or f"{project_id}.{dataset_id}.{table_id}"
     try:
-        logger.info(f"\t\tLoading DataFrame to BigQuery: {project_id}.{dataset_id}{table_id}")
+        logger.info(f"\t\tLoading DataFrame to BigQuery [{dest_label}]: {project_id}.{dataset_id}.{table_id}")
+
         # Ensure the 'src_df' parameter is a DataFrame
         if not isinstance(src_df, pd.DataFrame):
             raise ValueError("The 'src_df' parameter must be a Pandas DataFrame.")
 
+        credentials = None
+        if service_accnt_json_loc:
+            if not os.path.exists(service_accnt_json_loc):
+                raise FileNotFoundError(
+                    f"Service account JSON not found for [{dest_label}] at: {service_accnt_json_loc}"
+                )
+            credentials = service_account.Credentials.from_service_account_file(
+                service_accnt_json_loc,
+                scopes=["https://www.googleapis.com/auth/cloud-platform"],
+            )
+
         # Load the DataFrame to BigQuery
-        pandas_gbq.to_gbq(src_df, f'{project_id}.{dataset_id}.{table_id}', project_id=project_id, if_exists=write_mode)
-        logger.info("\t\tData load to EDW BQ completed SUCCESSFULLY ✅ \n\n")
+        pandas_gbq.to_gbq(
+            src_df,
+            f'{project_id}.{dataset_id}.{table_id}',
+            project_id=project_id,
+            if_exists=write_mode,
+            credentials=credentials,  # None => falls back to ADC automatically
+        )
+        logger.info(f"\t\tData load to [{dest_label}] BQ completed SUCCESSFULLY ✅ \n\n")
+        return True
     except Exception as e:
-        logger.error("\t\tERROR :%s in EDW DATA LOAD ❌ ",str(e))
-        sys.exit(96)
+        # Do NOT sys.exit here — a failure on one destination should not
+        # prevent the pipeline from attempting (or having already succeeded on)
+        # the other destination.
+        logger.error(f"\t\tERROR :%s in BQ DATA LOAD for [{dest_label}] ❌ ", str(e))
+        return False
 
 
 async def send_telegram_notifications(base_url,src_data):
@@ -210,7 +239,43 @@ if __name__ == '__main__':
         web_src_data = get_goldrates_scrapper(config.get('url','base_url'))
 
         logger.info(f"STEP 3: EDW DATA DUMP:")
-        load_bq(web_src_data,config.get('bq','project_id'),config.get('bq','dataset_id'),config.get('bq','table_id'),'append')
+
+        # --- Destination 1: existing primary BQ project (unchanged behavior) ---
+        primary_ok = load_bq(
+            web_src_data,
+            config.get('bq', 'project_id'),
+            config.get('bq', 'dataset_id'),
+            config.get('bq', 'table_id'),
+            'append',
+            service_accnt_json_loc=config.get('bq', 'service_accnt_json_loc', fallback=None),
+            label='primary',
+        )
+
+        # --- Destination 2: wealthyo.public.gold_rates (new) ---
+        # Reads from a separate [bq_wealthyo] config section so it can use its
+        # own service account (e.g. wealthyo-sa@wealthyo.iam.gserviceaccount.com)
+        # without touching the primary project's credentials.
+        wealthyo_ok = True
+        if config.has_section('bq_wealthyo'):
+            wealthyo_ok = load_bq(
+                web_src_data,
+                config.get('bq_wealthyo', 'project_id'),
+                config.get('bq_wealthyo', 'dataset_id'),
+                config.get('bq_wealthyo', 'table_id'),
+                'append',
+                service_accnt_json_loc=config.get('bq_wealthyo', 'service_accnt_json_loc', fallback=None),
+                label='wealthyo',
+            )
+        else:
+            logger.warning("\t\t[bq_wealthyo] section not found in config.ini — skipping wealthyo.public.gold_rates write.")
+
+        if not primary_ok:
+            logger.error("\t\tPrimary BQ load failed — exiting before Telegram notification ❌ ")
+            sys.exit(96)
+        if not wealthyo_ok:
+            # Don't kill the whole run over the secondary destination —
+            # primary EDW data is already safe. Just surface it loudly.
+            logger.warning("\t\twealthyo.public.gold_rates load failed — primary load succeeded, continuing ⚠️ ")
 
         logger.info(f"STEP 4: SEND TELEGRAM NOTIFICATIONS:")
         loop = asyncio.get_event_loop()
@@ -220,4 +285,3 @@ if __name__ == '__main__':
     else:
         logger.error("\t\tConfig file is Empty ,EXITING the code Execution ❌ ")
         sys.exit(99)
-
