@@ -1,34 +1,29 @@
 name: thangamayil_alert script
-
 on:
   schedule:
     - cron: '0 4-8 * * 1-6' # Runs from Mon-Sat daily from IST time 9:30 till 4:30 for every 1 hr
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-
       - name: checkout repo content
         uses: actions/checkout@v2 # checkout the repository content to github runner
-
       - name: setup python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10.13' # install the python version needed
-
       - name: install python packages
         run: |
           pip install -r requirements.txt
-
       - name: execute py script # run main.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
-          
+
         run: |-
           echo "${{ secrets.GOOGLE_CREDENTIALS }}" | base64 -d > $GITHUB_WORKSPACE/key.json
+          echo "${{ secrets.WEALTHYO_SA_KEY }}" | base64 -d > $GITHUB_WORKSPACE/wealthyo-key.json
           export GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/key.json
           gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
           python main.py
