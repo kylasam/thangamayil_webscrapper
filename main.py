@@ -11,10 +11,12 @@ import logging.handlers
 import os
 import logging
 from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
 from bs4 import BeautifulSoup
 import datetime
 import configparser
 import prettytable as pt
+import time
 
 
 # Set up logging
@@ -50,11 +52,44 @@ def read_config():
         return None
 
 def get_goldrates_scrapper(base_url):
+    max_retries = 3
+    retry_delay = 2  # seconds
+    
     try:
-        # Send an HTTP request with a User-Agent header
+        # Send an HTTP request with enhanced User-Agent header and retry logic
         logger.info(f"\t\tMake Request to the rate card webpage url : %s ", base_url)
-        r = Request(base_url, headers={'User-Agent': 'Mozilla/5.0'})
-        webpage = urlopen(r, timeout=10).read()
+        
+        # Enhanced User-Agent to bypass bot detection
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Referer': 'https://www.google.com/',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+        }
+        
+        webpage = None
+        last_exception = None
+        
+        # Retry logic with backoff
+        for attempt in range(max_retries):
+            try:
+                r = Request(base_url, headers=headers)
+                webpage = urlopen(r, timeout=10).read()
+                logger.info(f"\t\tSuccessfully retrieved webpage on attempt {attempt + 1}")
+                break
+            except (HTTPError, URLError) as e:
+                last_exception = e
+                logger.warning(f"\t\tAttempt {attempt + 1} failed: {str(e)}")
+                if attempt < max_retries - 1:
+                    logger.info(f"\t\tRetrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+        
+        if webpage is None:
+            raise last_exception if last_exception else Exception("Failed to retrieve webpage after all retries")
 
         # Parse the HTML content
         soup = BeautifulSoup(webpage, features="html.parser")
@@ -142,7 +177,7 @@ async def send_telegram_notifications(base_url,src_data):
         logger.info("Token or CHANNEL ID not available!")
         raise
 
-   # Initialize the Telegram bot
+    # Initialize the Telegram bot
     bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
     # Extract first two values
