@@ -1,5 +1,6 @@
 # Gold Rate Telegram Bot
 
+
 The Gold Rate Telegram Bot is a script that sends gold rate updates to a Telegram channel. It retrieves gold rate data from a specific website, formats it into a message, and sends it to a Telegram channel using the `python-telegram-bot` library. The entire process runs automatically via GitHub Actions on a cyclic schedule.
 
 ## Table of Contents
